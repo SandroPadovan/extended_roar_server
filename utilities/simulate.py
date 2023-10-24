@@ -4,7 +4,7 @@ import random
 
 from environment.settings import TRAINING_CSV_FOLDER_PATH
 from environment.state_handling import get_storage_path, is_multi_fp_collection, set_rw_done
-from utilities.metrics import write_metrics_to_file
+from utilities.metrics import write_resource_metrics_to_file
 
 
 # ==============================
@@ -33,7 +33,7 @@ def simulate_sending_fp(config_num):
         # print("SIM: fp", fp_file.name)
         fp = fp_file.read()
 
-    write_metrics_to_file(rate, fp, get_storage_path(), is_multi_fp_collection())
+    write_resource_metrics_to_file(rate, fp, get_storage_path(), is_multi_fp_collection())
 
 
 def simulate_sending_rw_done():
