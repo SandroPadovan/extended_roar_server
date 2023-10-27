@@ -50,7 +50,7 @@ def write_syscall_metrics_to_file(raw_data_file):
 
         for line in lines:
             try:
-                res = extract_metrics(str(line))
+                res = extract_metrics(line.decode("utf-8"))
             except Exception as e:
                 print(e)
                 res = None
