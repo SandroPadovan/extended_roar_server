@@ -16,7 +16,7 @@ def write_resource_metrics_to_file(rate, fp, storage_path, is_multi):
     set_fp_ready(True)
 
 
-def write_syscall_metrics_to_file(raw_data_file):
+def write_syscall_metrics_to_file(raw_data_file, storage_path):
 
     def extract_metrics(line: str):
         line = re.split(r' |\( |\)', line)
@@ -39,9 +39,9 @@ def write_syscall_metrics_to_file(raw_data_file):
     raw_data_file.stream.seek(0)
     lines = raw_data_file.stream.readlines()
 
-    os.makedirs(get_storage_path(), exist_ok=True)
+    os.makedirs(storage_path, exist_ok=True)
     file_name = "sc-{time}.csv".format(time=datetime.now().strftime("%Y-%m-%d--%H-%M-%S"))
-    sc_path = os.path.join(get_storage_path(), file_name)
+    sc_path = os.path.join(storage_path, file_name)
 
     with open(sc_path, 'w') as outp:
 
