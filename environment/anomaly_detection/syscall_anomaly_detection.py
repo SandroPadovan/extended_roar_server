@@ -43,8 +43,8 @@ def train_syscall_anomaly_detection() -> tuple[float, float, float, float]:
     test_data_path = config.get('anomaly_detection', 'syscall_test_path')
 
     if training_data_path.endswith('.pkl') and test_data_path.endswith('.pkl'):
-        normal_data_df = get_features(features_pkl_path='./fingerprints/syscall/enc/encoded_bow.pkl')
-        infected_data_df = get_features(features_pkl_path='./fingerprints/syscall/enc/encoded_bow.pkl')
+        normal_data_df = get_features(features_pkl_path=training_data_path)
+        infected_data_df = get_features(features_pkl_path=test_data_path)
     else:
         normal_data_df = get_features(raw_data_path=training_data_path)
         infected_data_df = get_features(raw_data_path=test_data_path)
