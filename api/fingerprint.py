@@ -26,6 +26,7 @@ def report_fingerprint(mac):
     if raw_syscall_file.filename == "":
         return "syscall file was not sent correctly", HTTPStatus.BAD_REQUEST
 
-    write_syscall_metrics_to_file(raw_syscall_file, os.path.join(get_storage_path(), 'syscalls'))
+    write_syscall_metrics_to_file(raw_syscall_file, os.path.join(get_storage_path(), 'syscalls'),
+                                  is_multi_fp_collection())
 
     return "", HTTPStatus.CREATED

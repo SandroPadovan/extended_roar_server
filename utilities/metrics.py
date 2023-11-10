@@ -3,8 +3,7 @@ import re
 from datetime import datetime
 from threading import Lock
 
-from environment.state_handling import set_fp_ready, get_fp_file_path, get_rate_file_path, \
-    get_storage_path
+from environment.state_handling import set_fp_ready, get_fp_file_path, get_rate_file_path, get_syscall_file_path
 
 
 def write_resource_metrics_to_file(rate, fp, storage_path, is_multi):
@@ -16,7 +15,7 @@ def write_resource_metrics_to_file(rate, fp, storage_path, is_multi):
     set_fp_ready(True)
 
 
-def write_syscall_metrics_to_file(raw_data_file, storage_path):
+def write_syscall_metrics_to_file(raw_data_file, storage_path, is_multi):
 
     def extract_metrics(line: str):
         line = re.split(r' |\( |\)', line)
@@ -40,8 +39,11 @@ def write_syscall_metrics_to_file(raw_data_file, storage_path):
     lines = raw_data_file.stream.readlines()
 
     os.makedirs(storage_path, exist_ok=True)
-    file_name = "sc-{time}.csv".format(time=datetime.now().strftime("%Y-%m-%d--%H-%M-%S"))
-    sc_path = os.path.join(storage_path, file_name)
+    if is_multi:
+        file_name = "sc-{time}.csv".format(time=datetime.now().strftime("%Y-%m-%d--%H-%M-%S"))
+        sc_path = os.path.join(storage_path, file_name)
+    else:
+        sc_path = get_syscall_file_path()
 
     with open(sc_path, 'w') as outp:
 
@@ -58,7 +60,7 @@ def write_syscall_metrics_to_file(raw_data_file, storage_path):
                 [pid, timestamp, syscall, time_cost] = res
                 outp.write('{},{},{},{}\n'.format(pid, timestamp, syscall, time_cost))
 
-        print(f'Successfully preprocessed incoming raw syscall data. Stored to: {file_name}')
+        print(f'Successfully preprocessed incoming raw syscall data. Stored to: {sc_path}')
         outp.close()
 
 
