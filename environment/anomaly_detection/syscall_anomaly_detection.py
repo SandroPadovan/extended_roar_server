@@ -68,4 +68,4 @@ def detect_syscall_anomaly(syscall_feature: list) -> list[int]:
     """
     clf = get_syscall_classifier()
     pred = clf.predict(syscall_feature)
-    return pred
+    return pred.tolist()
