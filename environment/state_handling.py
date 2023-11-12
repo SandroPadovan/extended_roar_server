@@ -141,6 +141,12 @@ def get_fp_file_path():
     return os.path.join(get_storage_path(), "fp-{}.txt".format(get_instance_number()))
 
 
+def get_syscall_file_path():
+    if not get_instance_number():
+        raise RuntimeError("Execution instance unknown! Must initialize storage first.")
+    return os.path.join(get_storage_path(), "sc-{}.csv".format(get_instance_number()))
+
+
 def get_rate_file_path():
     if not get_instance_number():
         raise RuntimeError("Execution instance unknown! Must initialize storage first.")
