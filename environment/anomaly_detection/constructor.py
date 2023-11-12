@@ -5,16 +5,16 @@ from environment.anomaly_detection.autoencoder import AutoEncoder
 from environment.anomaly_detection.simple_preprocessor import SimplePreprocessor
 from environment.settings import MAX_ALLOWED_CORRELATION_AE, MAX_ALLOWED_CORRELATION_IF
 from environment.state_handling import get_prototype
+from config import config
+from sklearn.ensemble import IsolationForest
 
-# ========================================
-# ==========   CONFIG   ==========
-# ========================================
-CONTAMINATION_FACTOR = 0.05
+CONTAMINATION_FACTOR = config.get_float('anomaly_detection', 'contamination_factor')
 
 # ========================================
 # ==========   GLOBALS   ==========
 # ========================================
 CLASSIFIER = None
+SYSCALL_CLASSIFIER = None
 PREPROCESSOR = None
 
 
@@ -37,6 +37,8 @@ def reset_AD():
     PREPROCESSOR = None
     global CLASSIFIER
     CLASSIFIER = None
+    global SYSCALL_CLASSIFIER
+    SYSCALL_CLASSIFIER = None
 
 
 def get_classifier():
@@ -52,6 +54,13 @@ def get_classifier():
             print("WARNING: Unknown prototype. Falling back to Isolation Forest classifier!")
             CLASSIFIER = IForest(random_state=42, contamination=CONTAMINATION_FACTOR)
     return CLASSIFIER
+
+
+def get_syscall_classifier():
+    global SYSCALL_CLASSIFIER
+    if SYSCALL_CLASSIFIER is None:
+        SYSCALL_CLASSIFIER = IsolationForest(contamination=CONTAMINATION_FACTOR, random_state=42)
+    return SYSCALL_CLASSIFIER
 
 
 def __get_correlation_threshold():
