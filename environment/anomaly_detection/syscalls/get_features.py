@@ -5,6 +5,10 @@ import tqdm
 import pickle
 import time
 from typing import Tuple
+import numpy as np
+
+# FEATURES = ['frequency', 'tfidf', 'hashing', 'onehot']    # complete feature set
+FEATURES = ['frequency']
 
 
 def get_syscall_dict(ngrams_dict: dict) -> dict:
@@ -24,18 +28,22 @@ def get_syscall_dict(ngrams_dict: dict) -> dict:
     return syscall_dict
 
 
-def create_vectorizers(corpus: list[str], ngram: int):
-    count_vectorizer = CountVectorizer(ngram_range=(1, ngram)).fit(corpus)
+def create_vectorizers(data: list[str], ngram: int):
+    count_vectorizer = CountVectorizer(ngram_range=(1, ngram)).fit(data)
     print(f'create count vectorizer finished for ngram={ngram}')
 
     ngrams_dict = count_vectorizer.vocabulary_
     syscall_dict = get_syscall_dict(ngrams_dict)
 
-    tfidf_vectorizer = TfidfVectorizer(ngram_range=(1, ngram), vocabulary=ngrams_dict).fit(corpus)
-    print(f'create tf-idf vectorizer finished for ngram={ngram}')
+    tfidf_vectorizer = None
+    if 'tfidf' in FEATURES:
+        tfidf_vectorizer = TfidfVectorizer(ngram_range=(1, ngram), vocabulary=ngrams_dict, dtype=np.int8).fit(data)
+        print(f'create tf-idf vectorizer finished for ngram={ngram}')
 
-    hashing_vectorizer = HashingVectorizer(n_features=2 ** 5).fit(corpus)
-    print(f'create hashing vectorizer finished for ngram={ngram}')
+    hashing_vectorizer = None
+    if 'hashing' in FEATURES:
+        hashing_vectorizer = HashingVectorizer(n_features=2 ** 5, dtype=np.int8).fit(data)
+        print(f'create hashing vectorizer finished for ngram={ngram}')
 
     return syscall_dict, ngrams_dict, count_vectorizer, tfidf_vectorizer, hashing_vectorizer
 
@@ -97,7 +105,7 @@ def get_dict_sequence(trace, term_dict):
     return dict_sequence
 
 
-def build_dicts(corpus: list[str]) -> tuple[dict, dict]:
+def build_dicts(data: list[str]) -> tuple[dict, dict]:
     """
     Builds the vectorizers and dicts using the count vectorizer, tfidf vectorizer,
     and hashing vectorizer.
@@ -109,7 +117,7 @@ def build_dicts(corpus: list[str]) -> tuple[dict, dict]:
 
     for i in range(1, 6):
         syscall_dict, ngrams_dict, countvectorizer, tfidfvectorizer, hashingvectorizer \
-            = create_vectorizers(corpus, i)
+            = create_vectorizers(data, i)
 
         syscall_dict, syscall_dict_onehot = add_unk_to_dict(syscall_dict)
 
@@ -146,13 +154,13 @@ def read_raw_data(path: str = None) -> list[pd.DataFrame]:
 
 
 def get_features(raw_data_path: str = None, features_pkl_path: str = None,
-                 store_features_pkl_path: str = None) -> pd.DataFrame:
+                 store_features_pkl_path: str = None, vectorizers_path: str = None) -> pd.DataFrame:
     """
-
-    :param raw_data_path:
-    :param features_pkl_path:
-    :param store_features_pkl_path:
-    :return:
+    :param raw_data_path: String path to read raw data. Must have trailing slash.
+    :param features_pkl_path: String path to stored features as pickle file.
+    :param store_features_pkl_path: String path to store features in pickle file.
+    :param vectorizers_path: String path to stored vectorizers of training data.
+    :return: DataFrame with features
     """
 
     if features_pkl_path:
@@ -168,94 +176,96 @@ def get_features(raw_data_path: str = None, features_pkl_path: str = None,
 
     features = []
 
-    vectorizers, dicts = build_dicts(syscall_str)
+    if vectorizers_path is None:
+        # build vectorizers and dicts
+        vectorizers, dicts = build_dicts(syscall_str)
+    else:
+        try:
+            # read vectorizers and dicts from pickle
+            with open(f"{vectorizers_path}vectorizers.pkl", "rb") as vectorizers_file:
+                vectorizers = pickle.load(vectorizers_file)
+            with open(f"{vectorizers_path}dicts.pkl", "rb") as dicts_file:
+                dicts = pickle.load(dicts_file)
+        except (FileNotFoundError, IOError):
+            # store vectorizers and dicts
+            vectorizers, dicts = build_dicts(syscall_str)
+            with open(f"{vectorizers_path}vectorizers.pkl", "wb") as vectorizers_file:
+                pickle.dump(vectorizers, vectorizers_file)
+            with open(f"{vectorizers_path}dicts.pkl", "wb") as dicts_file:
+                pickle.dump(dicts, dicts_file)
 
-    ngram_dict_name = 'ngrams_dict_ngram{}'.format(1)
     sdName = 'syscall_dict_ngram{}'.format(1)
     shdName = 'syscall_dict_onehot_ngram{}'.format(1)
-    ngram_dict = dicts[ngram_dict_name]
     syscall_dict = dicts[sdName]
     shd = dicts[shdName]
 
-    one_hot_features = []
     dict_sequence_features = []
 
-    t1 = time.time()
-    par = tqdm.tqdm(total=len(raw_data), ncols=100, desc='Create one-hot encoding')
-    for trace in raw_data:
-        syscall_trace = replace_with_unk(trace['syscall'].to_list(), syscall_dict)
-        syscall_one_hot = trace_onehot_encoding(syscall_trace, shd)
-        one_hot_features.append(syscall_one_hot)
-        par.update(1)
-    par.close()
-    key = 'syscall_one_hot'
-    t = time.time() - t1
-    print(f"{key}: {t:.2f} s")
-    # pca_name = key + '_pca'
-    # inputs = padding_onehot(one_hot_features, 160000)
-    # one_hot_features_pca, pca = get_pca_feature(inputs)
-    # pcas[pca_name] = pca
-    features.append(one_hot_features)
-    # features.append(one_hot_features_pca)
+    if 'onehot' in FEATURES:
+        one_hot_features = []
+        par = tqdm.tqdm(total=len(raw_data), ncols=100, desc='Create one-hot encoding')
+        for trace in raw_data:
+            syscall_trace = replace_with_unk(trace['syscall'].to_list(), syscall_dict)
+            syscall_one_hot = trace_onehot_encoding(syscall_trace, shd)
+            one_hot_features.append(syscall_one_hot)
+            par.update(1)
+        par.close()
+        features.append(one_hot_features)
+
     par = tqdm.tqdm(total=len(raw_data), ncols=100, desc='Get dict sequence')
-    t1 = time.time()
     for trace in raw_data:
         syscall_trace = replace_with_unk(trace['syscall'].to_list(), syscall_dict)
         dict_sequence = get_dict_sequence(syscall_trace, syscall_dict)
         dict_sequence_features.append(dict_sequence)
         par.update(1)
     par.close()
-    t = time.time() - t1
-    key = 'dict_sequence'
-    print(f"{key}: {t:.2f} s")
-    # pca_name = key + '_pca'
-    # inputs = padding_dictencoding(dict_sequence_features, 160000)
-    # dict_sequence_pca, pca = get_pca_feature(inputs)
-    # pcas[pca_name] = pca
     features.append(dict_sequence_features)
-
-    # features.append(dict_sequence_pca)
 
     def transform(vectorizer, vectorizer_name: str) -> list:
         t1 = time.time()
         features = vectorizer.transform(syscall_str)
         t = time.time() - t1
-        print(f"{vectorizer_name}: {t:.2f} s")
+        print(f"transform {vectorizer_name}: {t:.2f} s")
         return features.toarray()
 
     for i in range(1, 6):
-        count_vectorizer_name = 'countvectorizer_ngram{}'.format(i)
-        count_vectorizer = vectorizers[count_vectorizer_name]
-        frequency_features = transform(count_vectorizer, count_vectorizer_name)
-        features.append(frequency_features)
-        # frequency_pca_name = key + '_pca'
-        # frequency_pca,pca = get_pca_feature(frequency_features)
-        # pcas[frequency_pca_name] = pca
-        # features.append(frequency_pca)
+        if 'frequency' in FEATURES:
+            count_vectorizer_name = 'countvectorizer_ngram{}'.format(i)
+            count_vectorizer = vectorizers[count_vectorizer_name]
+            frequency_features = transform(count_vectorizer, count_vectorizer_name)
+            features.append(frequency_features)
 
-        tfidf_vectorizer_name = 'tfidfvectorizer_ngram{}'.format(i)
-        tfidf_vectorizer = vectorizers[tfidf_vectorizer_name]
-        tfidf_features = transform(tfidf_vectorizer, tfidf_vectorizer_name)
-        features.append(tfidf_features)
-        # tfidf_pca_name = key + '_pca'
-        # tfidf_pca,pca = get_pca_feature(tfidf_features)
-        # pcas[tfidf_pca_name] = pca
-        # features.append(tfidf_pca)
+        if 'tfidf' in FEATURES:
+            tfidf_vectorizer_name = 'tfidfvectorizer_ngram{}'.format(i)
+            tfidf_vectorizer = vectorizers[tfidf_vectorizer_name]
+            tfidf_features = transform(tfidf_vectorizer, tfidf_vectorizer_name)
+            features.append(tfidf_features)
 
-        hashing_vectorizer_name = 'hashingvectorizer_ngram{}'.format(i)
-        hashing_vectorizer = vectorizers[hashing_vectorizer_name]
-        hashing_features = transform(hashing_vectorizer, hashing_vectorizer_name)
-        features.append(hashing_features)
+        if 'hashing' in FEATURES:
+            hashing_vectorizer_name = 'hashingvectorizer_ngram{}'.format(i)
+            hashing_vectorizer = vectorizers[hashing_vectorizer_name]
+            hashing_features = transform(hashing_vectorizer, hashing_vectorizer_name)
+            features.append(hashing_features)
 
     features_df = pd.DataFrame(features).transpose()
-    features_df.columns = ['one hot encoding', 'dict index encoding',
-                           'system calls frequency_1gram', 'system calls tfidf_1gram', 'system calls hashing_1gram',
-                           'system calls frequency_2gram', 'system calls tfidf_2gram', 'system calls hashing_2gram',
-                           'system calls frequency_3gram', 'system calls tfidf_3gram', 'system calls hashing_3gram',
-                           'system calls frequency_4gram', 'system calls tfidf_4gram', 'system calls hashing_4gram',
-                           'system calls frequency_5gram', 'system calls tfidf_5gram', 'system calls hashing_5gram'
+
+    # column names for complete feature set
+    # features_df.columns = ['one hot encoding', 'dict index encoding',
+    #                        'system calls frequency_1gram', 'system calls tfidf_1gram', 'system calls hashing_1gram',
+    #                        'system calls frequency_2gram', 'system calls tfidf_2gram', 'system calls hashing_2gram',
+    #                        'system calls frequency_3gram', 'system calls tfidf_3gram', 'system calls hashing_3gram',
+    #                        'system calls frequency_4gram', 'system calls tfidf_4gram', 'system calls hashing_4gram',
+    #                        'system calls frequency_5gram', 'system calls tfidf_5gram', 'system calls hashing_5gram'
+    #                        ]
+    features_df.columns = ['dict index encoding',
+                           'system calls frequency_1gram',
+                           'system calls frequency_2gram',
+                           'system calls frequency_3gram',
+                           'system calls frequency_4gram',
+                           'system calls frequency_5gram',
                            ]
 
     if store_features_pkl_path:
         features_df.to_pickle(store_features_pkl_path)
+        print('stored features to pkl file')
     return features_df
