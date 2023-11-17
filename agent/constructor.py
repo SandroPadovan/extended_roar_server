@@ -1,3 +1,5 @@
+import logging
+
 from agent.agent_representation import AgentRepresentation
 from environment.state_handling import get_prototype
 from v1.agent.agent import AgentManual
@@ -48,7 +50,7 @@ def get_agent():
         elif proto == "11":
             AGENT = SyscallManualAgent()
         else:
-            print("WARNING: Unknown prototype. Falling back to default agent v1!")
+            logging.warning("Unknown prototype. Falling back to default agent v1!")
             AGENT = AgentManual()
     return AGENT
 
@@ -57,7 +59,7 @@ def build_agent_from_repr(representation):
     assert isinstance(representation, AgentRepresentation)
     proto = get_prototype()
     if proto == "1":
-        print("WARNING: Agent v1 does not support building from representation! Returning fresh agent instance...")
+        logging.warning("Agent v1 does not support building from representation! Returning fresh agent instance...")
         AGENT = AgentManual()
     elif proto == "2":
         AGENT = AgentQLearning(representation)
@@ -80,12 +82,12 @@ def build_agent_from_repr(representation):
     elif proto == "98":
         AGENT = AgentOneStepEpisodeQLearning(representation)
     elif proto == "99":
-        print("WARNING: Agent v99 does not support building from representation! Returning fresh agent instance...")
+        logging.warning("Agent v99 does not support building from representation! Returning fresh agent instance...")
         AGENT = AgentBruteForce()
     elif proto == "11":
-        print("WARNING: Agent v11 does not support building from representation! Returning fresh agent instance...")
+        logging.warning("Agent v11 does not support building from representation! Returning fresh agent instance...")
         AGENT = SyscallManualAgent()
     else:
-        print("WARNING: Unknown prototype. Falling back to default agent v1!")
+        logging.warning("Unknown prototype. Falling back to default agent v1!")
         AGENT = AgentManual()
     return AGENT

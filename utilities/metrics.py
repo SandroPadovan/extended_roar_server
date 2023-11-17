@@ -2,6 +2,9 @@ import os
 import re
 from datetime import datetime
 from threading import Lock
+from werkzeug.datastructures import FileStorage
+from typing import List, Union
+import logging
 
 from environment.state_handling import set_fp_ready, get_fp_file_path, get_rate_file_path, get_syscall_file_path
 
@@ -54,13 +57,13 @@ def write_syscall_metrics_to_file(raw_data_file, storage_path, is_multi):
             try:
                 res = extract_metrics(line.decode("utf-8"))
             except Exception as e:
-                print(e)
+                logging.error(e)
                 res = None
             if res is not None:
                 [pid, timestamp, syscall, time_cost] = res
                 outp.write('{},{},{},{}\n'.format(pid, timestamp, syscall, time_cost))
 
-        print(f'Successfully preprocessed incoming raw syscall data. Stored to: {sc_path}')
+        logging.debug(f'Successfully preprocessed incoming raw syscall data. Stored to: {sc_path}')
         outp.close()
 
 

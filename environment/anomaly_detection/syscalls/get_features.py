@@ -7,10 +7,11 @@ import time
 from typing import Tuple
 import numpy as np
 from config import config
+import logging
 
 # FEATURES = ['frequency', 'tfidf', 'hashing', 'onehot']    # complete feature set
 FEATURES = ['frequency']
-log_level = config.get("logging", "level")
+log_level = config.get_int("logging", "level")
 
 
 def get_syscall_dict(ngrams_dict: dict) -> dict:
@@ -32,8 +33,7 @@ def get_syscall_dict(ngrams_dict: dict) -> dict:
 
 def create_vectorizers(data: list[str], ngram: int):
     count_vectorizer = CountVectorizer(ngram_range=(1, ngram)).fit(data)
-    if log_level == "verbose":
-        print(f'create count vectorizer finished for ngram={ngram}')
+    logging.debug(f'create count vectorizer finished for ngram={ngram}')
 
     ngrams_dict = count_vectorizer.vocabulary_
     syscall_dict = get_syscall_dict(ngrams_dict)
@@ -41,14 +41,12 @@ def create_vectorizers(data: list[str], ngram: int):
     tfidf_vectorizer = None
     if 'tfidf' in FEATURES:
         tfidf_vectorizer = TfidfVectorizer(ngram_range=(1, ngram), vocabulary=ngrams_dict, dtype=np.int8).fit(data)
-        if log_level == "verbose":
-            print(f'create tf-idf vectorizer finished for ngram={ngram}')
+        logging.debug(f'create tf-idf vectorizer finished for ngram={ngram}')
 
     hashing_vectorizer = None
     if 'hashing' in FEATURES:
         hashing_vectorizer = HashingVectorizer(n_features=2 ** 5, dtype=np.int8).fit(data)
-        if log_level == "verbose":
-            print(f'create hashing vectorizer finished for ngram={ngram}')
+        logging.debug(f'create hashing vectorizer finished for ngram={ngram}')
 
     return syscall_dict, ngrams_dict, count_vectorizer, tfidf_vectorizer, hashing_vectorizer
 
@@ -141,15 +139,14 @@ def read_raw_data(path: str = None) -> list[pd.DataFrame]:
         raise ValueError("Raw data path is None.")
 
     if path.endswith(".csv"):
-        if log_level == "verbose":
-            print('Reading raw data from single file')
+        logging.debug('Reading raw data from single file')
         data = pd.read_csv(path)
         return [data]
     else:
         res = []
         raw_file_names = os.listdir(path)
         prog = tqdm.tqdm(total=len(raw_file_names), ncols=100, desc='Reading raw data from files',
-                         disable=log_level != "verbose")
+                         disable=log_level > 10)
         for file_name in raw_file_names:
             if file_name.endswith(".csv"):
                 data = pd.read_csv(path + file_name)
@@ -209,7 +206,7 @@ def get_features(raw_data_path: str = None, features_pkl_path: str = None,
 
     if 'onehot' in FEATURES:
         one_hot_features = []
-        par = tqdm.tqdm(total=len(raw_data), ncols=100, desc='Create one-hot encoding', disable=log_level != "verbose")
+        par = tqdm.tqdm(total=len(raw_data), ncols=100, desc='Create one-hot encoding', disable=log_level > 10)
         for trace in raw_data:
             syscall_trace = replace_with_unk(trace['syscall'].to_list(), syscall_dict)
             syscall_one_hot = trace_onehot_encoding(syscall_trace, shd)
@@ -218,7 +215,7 @@ def get_features(raw_data_path: str = None, features_pkl_path: str = None,
         par.close()
         features.append(one_hot_features)
 
-    par = tqdm.tqdm(total=len(raw_data), ncols=100, desc='Get dict sequence', disable=log_level != "verbose")
+    par = tqdm.tqdm(total=len(raw_data), ncols=100, desc='Get dict sequence', disable=log_level > 10)
     for trace in raw_data:
         syscall_trace = replace_with_unk(trace['syscall'].to_list(), syscall_dict)
         dict_sequence = get_dict_sequence(syscall_trace, syscall_dict)
@@ -231,8 +228,7 @@ def get_features(raw_data_path: str = None, features_pkl_path: str = None,
         t1 = time.time()
         features = vectorizer.transform(syscall_str)
         t = time.time() - t1
-        if log_level == "verbose":
-            print(f"transform {vectorizer_name}: {t:.2f} s")
+        logging.debug(f"transform {vectorizer_name}: {t:.2f} s")
         return features.toarray()
 
     for i in range(1, 6):
@@ -274,6 +270,5 @@ def get_features(raw_data_path: str = None, features_pkl_path: str = None,
 
     if store_features_pkl_path:
         features_df.to_pickle(store_features_pkl_path)
-        if log_level == "verbose":
-            print('stored features to pkl file')
+        logging.debug('stored features to pkl file')
     return features_df

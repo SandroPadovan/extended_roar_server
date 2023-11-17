@@ -1,4 +1,5 @@
 from pyod.models.iforest import IForest
+import logging
 
 from environment.anomaly_detection.advanced_preprocessor import AdvancedPreprocessor
 from environment.anomaly_detection.autoencoder import AutoEncoder
@@ -27,7 +28,7 @@ def get_preprocessor():
         elif proto in ["3", "4", "5", "6", "7", "8", "9", "10", "98"]:
             PREPROCESSOR = AdvancedPreprocessor(__get_correlation_threshold())
         else:
-            print("WARNING: Unknown prototype. Falling back to default simple preprocessor!")
+            logging.warning("Unknown prototype. Falling back to default simple preprocessor!")
             PREPROCESSOR = SimplePreprocessor()
     return PREPROCESSOR
 
@@ -51,7 +52,7 @@ def get_classifier():
             CLASSIFIER = AutoEncoder(encoding_dim=[40, 20, 10, 20, 40], random_state=42,
                                      outlier_percentage=CONTAMINATION_FACTOR)
         else:
-            print("WARNING: Unknown prototype. Falling back to Isolation Forest classifier!")
+            logging.warning("Unknown prototype. Falling back to Isolation Forest classifier!")
             CLASSIFIER = IForest(random_state=42, contamination=CONTAMINATION_FACTOR)
     return CLASSIFIER
 

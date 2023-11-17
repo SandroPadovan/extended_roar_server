@@ -2,6 +2,7 @@ import json
 import os
 from abc import ABC, abstractmethod
 from time import sleep
+import logging
 
 import numpy as np
 
@@ -22,18 +23,18 @@ class AbstractController(ABC):
 
     def __start_training(self):
         if not is_simulation():
-            print("\nWaiting for API...")
+            logging.info("\nWaiting for API...")
             while not is_api_running():
                 sleep(1)
 
-        print("\n==============================\nStart Training\n==============================")
+        logging.info("\n==============================\nStart Training\n==============================")
         # Initialize random seed for reproducibility
         np.random.seed(42)
 
         representation_path = get_agent_representation_path()
         if isinstance(representation_path, str) and len(representation_path) > 0\
                 and os.path.exists(representation_path):
-            print("Verified agent representation path:", representation_path)
+            logging.info("Verified agent representation path:", representation_path)
             with open(representation_path, "r") as agent_file:
                 repr_dict = json.load(agent_file)
             representation = AgentRepresentation(repr_dict["weights1"], repr_dict["weights2"],
@@ -41,19 +42,19 @@ class AbstractController(ABC):
                                                  repr_dict["epsilon"], repr_dict["learn_rate"],
                                                  repr_dict["num_input"], repr_dict["num_hidden"],
                                                  repr_dict["num_output"])
-            print("Building agent from representation.")
+            logging.info("Building agent from representation.")
             agent = build_agent_from_repr(representation)
-            print("------------------------------")
+            logging.info("------------------------------")
         else:
             agent = get_agent()
 
         q_values, rewards = self.loop_episodes(agent)
         if int(get_prototype()) > 1:
-            print("==============================", "Rewards:", rewards, "\nFinal Q-Values:", q_values, sep="\n")
-        print("\n==============================\n! Done !\n==============================")
+            logging.info(f"==============================\nRewards:\n{rewards}\n\nFinal Q-Values:\n{q_values}\n")
+        logging.info("\n==============================\n! Done !\n==============================")
 
     def run_c2(self):
-        print("==============================\nPrepare Reward Computation\n==============================")
+        logging.info("==============================\nPrepare Reward Computation\n==============================")
         AbstractReward.prepare_reward_computation()
 
         if WAIT_FOR_CONFIRM:

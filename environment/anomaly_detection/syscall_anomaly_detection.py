@@ -1,4 +1,5 @@
 import time
+import logging
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from environment.anomaly_detection.syscalls.get_features import get_features
@@ -38,7 +39,7 @@ def train_syscall_anomaly_detection() -> tuple[float, float, float, float]:
 
     :return: validation accuracy score, test accuracy score, training time, test prediction time
     """
-    print('training syscall AD...')
+    logging.info('training syscall AD...')
 
     training_data_path = config.get('anomaly_detection', 'syscall_training_path')
     test_data_path = config.get('anomaly_detection', 'syscall_test_path')

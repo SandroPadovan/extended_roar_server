@@ -1,3 +1,4 @@
+import logging
 from environment.reward.abstract_reward import AbstractReward
 from environment.anomaly_detection.syscall_anomaly_detection import train_syscall_anomaly_detection, \
     detect_syscall_anomaly
@@ -18,7 +19,7 @@ class SyscallStandardReward(AbstractReward):
             return self.r_done
 
         prediction = detect_syscall_anomaly(syscall_features)  # int [-1 1]
-        print("--- Detected {} Syscall.".format("anomalous" if prediction == -1 else "normal"))
+        logging.info("--- Detected {} Syscall.".format("anomalous" if prediction == -1 else "normal"))
         if bool(prediction == -1):
             return self.r_detected
         else:
