@@ -23,8 +23,12 @@ def get(section: str, option: str) -> str:
     return config.get(section, option)
 
 
-def get_int(section: str, option: str) -> str:
+def get_int(section: str, option: str) -> int:
     return config.getint(section, option)
+
+
+def get_float(section: str, option: str) -> float:
+    return config.getfloat(section, option)
 
 
 def get_default_bool(section: str, option: str, default: bool) -> bool:

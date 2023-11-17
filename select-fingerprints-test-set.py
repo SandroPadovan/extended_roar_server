@@ -2,9 +2,10 @@ import os
 import random
 
 from environment.state_handling import get_num_configs
+from config import config
 
-CSV_FOLDER_PATH = "<path-to-shared-parent-folder>"  # optional utility path, convenient if folders share a parent
-complete_dir = os.path.join(CSV_FOLDER_PATH, "<fingerprints-folder>")  # path to folder with all collected fingerprints
+CSV_FOLDER_PATH = config.get('filepaths', 'csv_folder_path')
+complete_dir = os.path.join(CSV_FOLDER_PATH, config.get('filepaths', 'fingerprints_folder'))
 evaluation_dir = os.path.join(CSV_FOLDER_PATH, "evaluation")  # path to target folder for test sets
 training_dir = os.path.join(CSV_FOLDER_PATH, "training")  # path to target folder for training sets
 

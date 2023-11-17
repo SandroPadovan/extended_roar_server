@@ -10,8 +10,9 @@ from agent.constructor import get_agent, build_agent_from_repr
 from environment.reward.abstract_reward import AbstractReward
 from environment.state_handling import is_api_running, is_simulation, get_prototype, get_storage_path,\
     get_agent_representation_path
+from config import config
 
-WAIT_FOR_CONFIRM = False
+WAIT_FOR_CONFIRM = config.get_default_bool('controller', 'wait_for_confirm', default=False)
 
 
 class AbstractController(ABC):

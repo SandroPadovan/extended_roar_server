@@ -7,6 +7,7 @@ from environment.constructor import get_controller
 from environment.state_handling import get_instance_number, setup_child_instance, initialize_storage, cleanup_storage,\
     is_multi_fp_collection, set_multi_fp_collection, is_simulation, set_simulation, set_api_running, set_prototype,\
     set_agent_representation_path
+from config import config
 
 
 def parse_args():
@@ -36,7 +37,9 @@ def start_api(instance_number):
     app = create_app()
     print("==============================\nStart API\n==============================")
     set_api_running()
-    app.run(host="0.0.0.0", port=5000)
+    host = config.get('server', 'host')
+    port = config.get_int('server', 'port')
+    app.run(host, port)
 
 
 def kill_process(process):
