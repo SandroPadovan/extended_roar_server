@@ -37,10 +37,16 @@ def write_syscall_metrics_to_file(raw_data_file, storage_path, is_multi):
             syscall = line[5].split('(')[0]
         return [pid, timestamp, syscall, time_cost]
 
-    # preprocess raw data
-    raw_data_file.stream.seek(0)
-    lines = raw_data_file.stream.readlines()
+    # read raw data
+    if isinstance(raw_data_file, FileStorage):
+        raw_data_file.stream.seek(0)
+        lines: List[Union[str, bytes]] = raw_data_file.stream.readlines()
+    else:
+        # for simulation: raw_data_file is a path to a file
+        with open(raw_data_file, "r") as file:
+            lines: List[Union[str, bytes]] = file.readlines()
 
+    # get output path
     os.makedirs(storage_path, exist_ok=True)
     if is_multi:
         file_name = "sc-{time}.csv".format(time=datetime.now().strftime("%Y-%m-%d--%H-%M-%S"))
@@ -48,6 +54,7 @@ def write_syscall_metrics_to_file(raw_data_file, storage_path, is_multi):
     else:
         sc_path = get_syscall_file_path()
 
+    # extract metrics from raw data and store to output file
     with open(sc_path, 'w') as outp:
 
         # write headers
