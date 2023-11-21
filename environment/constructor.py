@@ -11,6 +11,7 @@ from v10.environment.controller import ControllerOptimizedQLearningIF
 from v98.environment.controller import ControllerOneStepEpisodeQLearning
 from v99.environment.controller import ControllerBruteForce
 from v11.environment.controller import SyscallController
+from v12.environment.controller import SyscallControllerQLearning
 from environment.state_handling import get_prototype
 
 CONTROLLER = None
@@ -46,6 +47,8 @@ def get_controller():
             CONTROLLER = ControllerBruteForce()
         elif proto == "11":
             CONTROLLER = SyscallController()
+        elif proto == "12":
+            CONTROLLER = SyscallControllerQLearning()
         else:
             print("WARNING: Unknown prototype. Falling back to default controller v1!")
             CONTROLLER = ControllerManual()
