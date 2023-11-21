@@ -1,6 +1,8 @@
 import os
 from threading import Lock
 
+from environment.anomaly_detection.syscalls.get_features import get_features
+from config import config
 from tinydb import TinyDB, Query
 from tinydb.operations import set
 
@@ -17,6 +19,14 @@ def is_fp_ready():
 
 def set_fp_ready(ready_state):
     __set_value("FP_READY", ready_state)
+
+
+def is_syscall_ready():
+    return __query_key("SYSCALL_READY")
+
+
+def set_syscall_ready(ready_state):
+    __set_value("SYSCALL_READY", ready_state)
 
 
 def is_rw_done():
@@ -36,6 +46,12 @@ def collect_fingerprint():
         fp = file.readline()[1:-1].replace(" ", "")
     # print("Collected FP.")
     return fp
+
+
+def collect_syscall():
+    features = get_features(raw_data_path=get_syscall_file_path(),
+                            vectorizers_path=config.get("anomaly_detection", "normal_vectorizers_path"))
+    return features[config.get("anomaly_detection", "syscall_feature")]
 
 
 def collect_rate():
@@ -115,6 +131,7 @@ def initialize_storage():
     db.insert({"key": "SIMULATION", "value": False})
     db.insert({"key": "API", "value": False})
     db.insert({"key": "AGENT_REPR", "value": ""})
+    db.insert({"key": "SYSCALL_READY", "value": False})
 
 
 def cleanup_storage():
