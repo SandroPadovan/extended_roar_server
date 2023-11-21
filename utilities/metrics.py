@@ -6,19 +6,20 @@ from werkzeug.datastructures import FileStorage
 from typing import List, Union
 import logging
 
-from environment.state_handling import set_fp_ready, get_fp_file_path, get_rate_file_path, get_syscall_file_path
+from environment.state_handling import set_fp_ready, get_fp_file_path, get_rate_file_path, get_syscall_file_path, \
+    set_syscall_ready
 
 
-def write_resource_metrics_to_file(rate, fp, storage_path, is_multi):
-    # print("UTILS: writing rate/fp", rate, fp, is_multi)
+def write_resource_metrics_to_file(rate, fp, storage_path, is_multi, timestamp: datetime = datetime.now()):
+    logging.debug("UTILS: writing rate/fp", rate, fp, is_multi)
     if not is_multi:
         __write_rate_to_file(rate, storage_path)
-    __write_fingerprint_to_file(fp, storage_path, is_multi)
-    # print("UTILS: rate/fp written")
+    __write_fingerprint_to_file(fp, storage_path, is_multi, timestamp)
+    logging.debug("UTILS: rate/fp written")
     set_fp_ready(True)
 
 
-def write_syscall_metrics_to_file(raw_data_file, storage_path, is_multi):
+def write_syscall_metrics_to_file(raw_data_file, storage_path, is_multi, timestamp: datetime = datetime.now()):
 
     def extract_metrics(line: str):
         line = re.split(r' |\( |\)', line)
@@ -49,7 +50,7 @@ def write_syscall_metrics_to_file(raw_data_file, storage_path, is_multi):
     # get output path
     os.makedirs(storage_path, exist_ok=True)
     if is_multi:
-        file_name = "sc-{time}.csv".format(time=datetime.now().strftime("%Y-%m-%d--%H-%M-%S"))
+        file_name = "sc-{time}.csv".format(time=timestamp.strftime("%Y-%m-%d--%H-%M-%S"))
         sc_path = os.path.join(storage_path, file_name)
     else:
         sc_path = get_syscall_file_path()
@@ -62,7 +63,7 @@ def write_syscall_metrics_to_file(raw_data_file, storage_path, is_multi):
 
         for line in lines:
             try:
-                res = extract_metrics(line.decode("utf-8"))
+                res = extract_metrics(line.decode("utf-8")) if isinstance(line, bytes) else extract_metrics(line)
             except Exception as e:
                 logging.error(e)
                 res = None
@@ -72,6 +73,8 @@ def write_syscall_metrics_to_file(raw_data_file, storage_path, is_multi):
 
         logging.debug(f'Successfully preprocessed incoming raw syscall data. Stored to: {sc_path}')
         outp.close()
+
+    set_syscall_ready(True)
 
 
 def __write_rate_to_file(rate, storage_path):
@@ -84,10 +87,10 @@ def __write_rate_to_file(rate, storage_path):
             file.write(str(rate))
 
 
-def __write_fingerprint_to_file(fp, storage_path, is_multi):
+def __write_fingerprint_to_file(fp, storage_path, is_multi, timestamp: datetime):
     os.makedirs(storage_path, exist_ok=True)
     if is_multi:
-        file_name = "fp-{time}.txt".format(time=datetime.now().strftime("%Y-%m-%d--%H-%M-%S"))
+        file_name = "fp-{time}.txt".format(time=timestamp.strftime("%Y-%m-%d--%H-%M-%S"))
         fp_path = os.path.join(storage_path, file_name)
     else:
         fp_path = get_fp_file_path()
