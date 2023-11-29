@@ -173,13 +173,13 @@ class SyscallControllerQLearning(AbstractController):
 
         logging.info("==============================")
         logging.info("Saving trained agent to file...")
-        logging.info("- Agent saved:", agent_file)
+        logging.info(f"- Agent saved: {agent_file}")
 
         all_rewards = list(map(lambda x: x[1], reward_store))
         logging.info("Generating plots...")
         results_plots_file = plot_average_results(all_rewards, MAX_STEPS_V12, description)
-        logging.info("- Plots saved:", results_plots_file)
+        logging.info(f"- Plots saved: {results_plots_file}")
         results_store_file = AbstractController.save_results_to_file(all_rewards, [], [MAX_STEPS_V12], description)
-        logging.info("- Results saved:", results_store_file)
+        logging.info(f"- Results saved: {results_store_file}")
 
         return last_q_values, reward_store
