@@ -21,6 +21,13 @@ def write_resource_metrics_to_file(rate, fp, storage_path, is_multi, timestamp: 
 
 def write_syscall_metrics_to_file(raw_data_file, storage_path, is_multi, timestamp: datetime = datetime.now()):
 
+    def extract_metrics_from_str(line: str):
+        line = line.split(",")
+        line = list(filter(lambda a: a != '', line))
+        if len(line) != 4:
+            return None
+        return tuple(line)
+
     def extract_metrics(line: str):
         line = re.split(r' |\( |\)', line)
         line = list(filter(lambda a: a != '', line))
@@ -59,11 +66,13 @@ def write_syscall_metrics_to_file(raw_data_file, storage_path, is_multi, timesta
     with open(sc_path, 'w') as outp:
 
         # write headers
-        outp.write('pid,timestamp,syscall,time_cost\n')
+        if isinstance(raw_data_file, FileStorage):
+            outp.write('pid,timestamp,syscall,time_cost\n')
 
         for line in lines:
             try:
-                res = extract_metrics(line.decode("utf-8")) if isinstance(line, bytes) else extract_metrics(line)
+                res = extract_metrics(line.decode("utf-8")) if isinstance(line, bytes) \
+                    else extract_metrics_from_str(line)
             except Exception as e:
                 logging.error(e)
                 res = None
