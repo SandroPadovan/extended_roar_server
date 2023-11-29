@@ -18,7 +18,7 @@ class SyscallStandardReward(AbstractReward):
         if done:
             return self.r_done
 
-        prediction = detect_syscall_anomaly(syscall_features)  # int [-1 1]
+        prediction = detect_syscall_anomaly(syscall_features)[0]  # int [-1, 1]
         logging.info("--- Detected {} Syscall.".format("anomalous" if prediction == -1 else "normal"))
         if bool(prediction == -1):
             return self.r_detected
