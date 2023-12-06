@@ -16,6 +16,7 @@ from v98.agent.agent import AgentOneStepEpisodeQLearning
 from v99.agent.agent import AgentBruteForce
 from v11.agent.agent import SyscallManualAgent
 from v12.agent.agent import SyscallAgentQLearning
+from v13.agent.agent import SyscallAgentAdvancedQLearning
 
 AGENT = None
 
@@ -52,6 +53,8 @@ def get_agent():
             AGENT = SyscallManualAgent()
         elif proto == "12":
             AGENT = SyscallAgentQLearning()
+        elif proto == "13":
+            AGENT = SyscallAgentAdvancedQLearning()
         else:
             logging.warning("Unknown prototype. Falling back to default agent v1!")
             AGENT = AgentManual()
@@ -93,6 +96,8 @@ def build_agent_from_repr(representation):
     elif proto == "12":
         logging.warning("Agent v12 does not support building from representation! Returning fresh agent instance...")
         AGENT = SyscallAgentQLearning()
+    elif proto == "13":
+        AGENT = SyscallAgentAdvancedQLearning(representation)
     else:
         logging.warning("Unknown prototype. Falling back to default agent v1!")
         AGENT = AgentManual()
