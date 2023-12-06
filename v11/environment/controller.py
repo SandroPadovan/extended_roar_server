@@ -39,7 +39,7 @@ class SyscallController(AbstractController):
         while not is_fp_ready():
             sleep(.5)
         curr_syscall = get_features(raw_data_path=get_syscall_file_path(),
-                                    vectorizers_path=config.get("anomaly_detection", "normal_vectorizers_path"))
+                                    vectorizer_path=config.get("anomaly_detection", "normal_vectorizer_path"))
         set_fp_ready(False)
 
         logging.debug("Loop episode...")
@@ -66,7 +66,7 @@ class SyscallController(AbstractController):
                 sleep(.5)
 
             next_syscall = get_features(raw_data_path=get_syscall_file_path(),
-                                        vectorizers_path=config.get("anomaly_detection", "normal_vectorizers_path"))
+                                        vectorizer_path=config.get("anomaly_detection", "normal_vectorizer_path"))
             feature_name = config.get('anomaly_detection', 'syscall_feature')
 
             set_fp_ready(False)

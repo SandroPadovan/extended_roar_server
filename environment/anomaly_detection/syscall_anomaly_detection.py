@@ -43,14 +43,14 @@ def train_syscall_anomaly_detection() -> tuple[float, float, float, float]:
 
     training_data_path = config.get('anomaly_detection', 'syscall_training_path')
     test_data_path = config.get('anomaly_detection', 'syscall_test_path')
-    normal_vectorizers_path = config.get('anomaly_detection', 'normal_vectorizers_path')
+    vectorizer_path = config.get('anomaly_detection', 'normal_vectorizer_path')
 
     if training_data_path.endswith('.pkl') and test_data_path.endswith('.pkl'):
         normal_data_df = get_features(features_pkl_path=training_data_path)
         infected_data_df = get_features(features_pkl_path=test_data_path)
     else:
-        normal_data_df = get_features(raw_data_path=training_data_path, vectorizers_path=normal_vectorizers_path)
-        infected_data_df = get_features(raw_data_path=test_data_path, vectorizers_path=normal_vectorizers_path)
+        normal_data_df = get_features(raw_data_path=training_data_path, vectorizer_path=vectorizer_path)
+        infected_data_df = get_features(raw_data_path=test_data_path, vectorizer_path=vectorizer_path)
 
     feature_name = config.get('anomaly_detection', 'syscall_feature')
 

@@ -50,7 +50,7 @@ def collect_fingerprint():
 
 def collect_syscall():
     features = get_features(raw_data_path=get_syscall_file_path(),
-                            vectorizers_path=config.get("anomaly_detection", "normal_vectorizers_path"))
+                            vectorizer_path=config.get("anomaly_detection", "normal_vectorizer_path"))
     return features[config.get("anomaly_detection", "syscall_feature")]
 
 
