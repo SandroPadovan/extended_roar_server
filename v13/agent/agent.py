@@ -10,7 +10,6 @@ from config import config
 
 
 SYSCALL_DIMS = config.get_int("v13", "syscall_dims")
-HIDDEN_NEURONS = config.get_int("v13", "hidden_neurons")
 LEARN_RATE = config.get_float("v13", "learn_rate")
 DISCOUNT_FACTOR = config.get_float("v13", "discount_factor")
 
