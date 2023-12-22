@@ -11,7 +11,7 @@ from environment.state_handling import set_fp_ready, get_fp_file_path, get_rate_
 
 
 def write_resource_metrics_to_file(rate, fp, storage_path, is_multi, timestamp: datetime = datetime.now()):
-    logging.debug("UTILS: writing rate/fp", rate, fp, is_multi)
+    logging.debug(f"UTILS: writing rate/fp {rate} {fp}, {is_multi}")
     if not is_multi:
         __write_rate_to_file(rate, storage_path)
     __write_fingerprint_to_file(fp, storage_path, is_multi, timestamp)
