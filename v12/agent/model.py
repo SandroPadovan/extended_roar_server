@@ -46,7 +46,8 @@ class ModelQLearning(object):
         logging.debug(f"MODEL: ad2 min/max {adaline2.shape} {np.min(adaline2)} {np.argmin(adaline2)} {np.max(adaline2)} {np.argmax(adaline2)}")
 
 
-        q = adaline2 * (adaline2 > 0)  # ReLU activation, h2
+        # q = adaline2 * (adaline2 > 0)  # ReLU activation, h2
+        q = adaline2 / (1 + np.exp(-adaline2))  # SiLU activation, h2
 
         logging.debug(f"MODEL: Q {q.shape}\n{q}")
 
@@ -60,12 +61,12 @@ class ModelQLearning(object):
 
         if np.random.random() < epsilon:  # explore randomly
             sel_a = possible_a[np.random.randint(possible_a.size)]
-            logging.info(f"MODEL: random action {sel_a}")
+            logging.debug(f"MODEL: random action {sel_a}")
         else:  # exploit greedily
             argmax = np.argmax(q_a)
             logging.debug(f"MODEL: argmax {argmax} of {q_a} for {possible_a}")
             sel_a = possible_a[argmax]
-            logging.info(f"MODEL: greedy action {sel_a}")
+            logging.debug(f"MODEL: greedy action {sel_a}")
 
         return hidden1, q, sel_a
 
@@ -80,7 +81,9 @@ class ModelQLearning(object):
         logging.debug(f"MODEL back: inputs: {inputs.shape}, {inputs.T}")
         logging.debug(f"MODEL back: err: {q_err.shape}, {q_err.T}")
 
-        delta2 = (q > 0) * q_err  # derivative ReLU: 1 if q > 0 else 0
+        # delta2 = (q > 0) * q_err  # derivative ReLU: 1 if q > 0 else 0
+        delta2 = 1 / (1 + np.exp(-q)) * (
+                1 + q * (1 - (1 / (1 + np.exp(-q))))) * q_err  # derivative SiLU: sig(q) * (1 + q(1 - sig(q)))
         delta_weights2 = np.outer(hidden, delta2.T)
 
         logging.debug(f"MODEL back: d2 {delta2.shape} {delta2}")
