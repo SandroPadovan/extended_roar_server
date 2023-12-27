@@ -6,6 +6,7 @@ from agent.agent_representation import AgentRepresentation
 from api.configurations import map_to_ransomware_configuration, send_config
 from environment.abstract_controller import AbstractController
 from environment.reward.syscall_performance_reward import SyscallPerformanceReward
+from environment.reward.revised_syscall_performance_reward import RevisedSyscallPerformanceReward
 from environment.state_handling import is_syscall_ready, set_syscall_ready, is_rw_done, is_simulation, get_prototype, \
     collect_syscall, set_rw_done, collect_rate
 from utilities.simulate import simulate_sending_fp, simulate_sending_rw_done
@@ -14,19 +15,23 @@ from config import config
 
 WAIT_FOR_CONFIRM = config.get_default_bool('controller', 'wait_for_confirm', default=False)
 MAX_EPISODES_V13 = config.get_int("v13", "max_episodes")
-USE_SIMULATED_CORPUS = config.get_default_bool("v13", "use_simulated_corpus", True)
+USE_SIMULATED_CORPUS = config.get_default_bool("v13", "use_simulated_corpus", default=True)
 MAX_STEPS_V13 = config.get_int("v13", "max_steps")
 CORPUS_SIZE = config.get_int("v13", "corpus_size")
 EPSILON = config.get_float("v13", "epsilon")
 DECAY_RATE = config.get_float("v13", "decay_rate")
 FEATURE_NAME = config.get("anomaly_detection", "syscall_feature")
+USE_REVISED_REWARD = config.get_default_bool("v13", "use_revised_reward", default=False)
 
 
 class SyscallControllerAdvancedQLearning(AbstractController):
 
     def run_c2(self):
         logging.info("\n==============================\nPrepare Reward Computation\n==============================")
-        SyscallPerformanceReward.prepare_reward_computation()
+        if USE_REVISED_REWARD:
+            RevisedSyscallPerformanceReward.prepare_reward_computation()
+        else:
+            SyscallPerformanceReward.prepare_reward_computation()
 
         if WAIT_FOR_CONFIRM:
             cont = input("Results ok? Start C2 Server? [y/n]\n")
@@ -52,7 +57,8 @@ class SyscallControllerAdvancedQLearning(AbstractController):
 
         weights1, weights2, bias_weights1, bias_weights2 = agent.initialize_network()
 
-        reward_system = SyscallPerformanceReward(+1000, 0, 20)
+        reward_system = RevisedSyscallPerformanceReward(+1000, 50, 50) if USE_REVISED_REWARD \
+            else SyscallPerformanceReward(+1000, 0, 20)
 
         # ==============================
         # Setup collectibles
