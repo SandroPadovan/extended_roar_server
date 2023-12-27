@@ -8,8 +8,11 @@ from environment.settings import MAX_ALLOWED_CORRELATION_AE, MAX_ALLOWED_CORRELA
 from environment.state_handling import get_prototype
 from config import config
 from sklearn.ensemble import IsolationForest
+from sklearn.neighbors import LocalOutlierFactor
 
-CONTAMINATION_FACTOR = config.get_float('anomaly_detection', 'contamination_factor')
+RESOURCE_CONTAMINATION_FACTOR = config.get_float('anomaly_detection', 'resource_contamination_factor')
+SYSCALL_CONTAMINATION_FACTOR = config.get_float('anomaly_detection', 'syscall_contamination_factor')
+SYSCALL_CLASSIFIER_ALGO = config.get("anomaly_detection", "syscall_classifier_algo")
 
 # ========================================
 # ==========   GLOBALS   ==========
@@ -47,20 +50,28 @@ def get_classifier():
     if not CLASSIFIER:
         proto = get_prototype()
         if proto in ["1", "2", "3", "4", "5", "6", "7", "8", "10", "98", "99"]:
-            CLASSIFIER = IForest(random_state=42, contamination=CONTAMINATION_FACTOR)
+            CLASSIFIER = IForest(random_state=42, contamination=RESOURCE_CONTAMINATION_FACTOR)
         elif proto in ["9"]:
             CLASSIFIER = AutoEncoder(encoding_dim=[40, 20, 10, 20, 40], random_state=42,
-                                     outlier_percentage=CONTAMINATION_FACTOR)
+                                     outlier_percentage=RESOURCE_CONTAMINATION_FACTOR)
         else:
             logging.warning("Unknown prototype. Falling back to Isolation Forest classifier!")
-            CLASSIFIER = IForest(random_state=42, contamination=CONTAMINATION_FACTOR)
+            CLASSIFIER = IForest(random_state=42, contamination=RESOURCE_CONTAMINATION_FACTOR)
     return CLASSIFIER
 
 
 def get_syscall_classifier():
     global SYSCALL_CLASSIFIER
     if SYSCALL_CLASSIFIER is None:
-        SYSCALL_CLASSIFIER = IsolationForest(contamination=CONTAMINATION_FACTOR, random_state=42)
+
+        if SYSCALL_CLASSIFIER_ALGO == "LOF":
+            # additional benign behaviors used
+            SYSCALL_CLASSIFIER = LocalOutlierFactor(n_neighbors=3400, contamination=SYSCALL_CONTAMINATION_FACTOR,
+                                                    novelty=True)
+        else:
+            # no additional behavior used
+            SYSCALL_CLASSIFIER = IsolationForest(contamination=SYSCALL_CONTAMINATION_FACTOR, random_state=42)
+
     return SYSCALL_CLASSIFIER
 
 
