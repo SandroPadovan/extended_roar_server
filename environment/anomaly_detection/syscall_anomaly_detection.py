@@ -11,7 +11,9 @@ def fit_to_data(train_data: list, test_data: list) -> tuple[float, float, float,
     classifier = get_syscall_classifier()
 
     y = [1 for _ in range(0, len(train_data))]
-    X_train, X_val, y_train, y_val = train_test_split(train_data, y, test_size=.3, shuffle=False)
+
+    shuffle = config.get_default_bool("anomaly_detection", "shuffle_training_data", default=False)
+    X_train, X_val, y_train, y_val = train_test_split(train_data, y, test_size=.3, shuffle=shuffle, random_state=42)
     y_val = [1 for _ in range(0, len(X_val))]
 
     t1 = time.time()
@@ -39,7 +41,7 @@ def train_syscall_anomaly_detection() -> tuple[float, float, float, float]:
 
     :return: validation accuracy score, test accuracy score, training time, test prediction time
     """
-    logging.info('training syscall AD...')
+    logging.debug('training syscall AD...')
 
     training_data_path = config.get('anomaly_detection', 'syscall_training_path')
     test_data_path = config.get('anomaly_detection', 'syscall_test_path')
