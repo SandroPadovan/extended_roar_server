@@ -5,6 +5,7 @@ from sklearn import metrics
 from environment.anomaly_detection.syscalls.get_features import get_features
 from environment.anomaly_detection.constructor import get_syscall_classifier
 from config import config
+import numpy as np
 
 
 def fit_to_data(train_data: list, test_data: list) -> tuple[float, float, float, float]:
@@ -72,3 +73,71 @@ def detect_syscall_anomaly(syscall_feature: list) -> list[int]:
     clf = get_syscall_classifier()
     pred = clf.predict(syscall_feature)
     return pred.tolist()
+
+
+if __name__ == "__main__":
+
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=config.get_int("logging", "level"))
+    feature_name = config.get('anomaly_detection', 'syscall_feature')
+
+    behaviors = ["infected", "compression", "installation"]
+    pkl_file_identifier = "c+n"
+
+    # number of evaluation runs
+    n = 100
+
+    for behavior in behaviors:
+        val_scores = []
+        test_scores = []
+        normal_count = {
+            0: [],
+            1: [],
+            2: [],
+            3: [],
+            4: [],
+            5: [],
+        }
+        anomalous_count = {
+            0: [],
+            1: [],
+            2: [],
+            3: [],
+            4: [],
+            5: [],
+        }
+        percentage = {
+            0: [],
+            1: [],
+            2: [],
+            3: [],
+            4: [],
+            5: [],
+        }
+
+        for i in range(n):
+
+            # train AD
+            val_score, test_score, train_t, t_test = train_syscall_anomaly_detection()
+            val_scores.append(val_score)
+            test_scores.append(test_score)
+
+            for j in range(6):
+                features = get_features(
+                    features_pkl_path=f'./fingerprints/training/{behavior}-c{j}/{pkl_file_identifier}-c{j}.pkl')
+
+                data = features[feature_name].tolist()
+
+                # prediction
+                pred = detect_syscall_anomaly(data)
+
+                normal_count[j].append(pred.count(1))
+                anomalous_count[j].append(pred.count(-1))
+                percentage[j].append(pred.count(1)/len(pred) * 100)
+
+
+        print(f"val_score: {np.mean(val_scores):.2f} %")
+        print(f"test_score: {np.mean(test_scores):.2f} %")
+
+        for i in range(6):
+            print(f'syscall predictions c{i}: {np.mean(normal_count[i])} normal, {np.mean(anomalous_count[i])} anomalous \t '
+                  f'-> {np.mean(percentage[i]):.2f} % normal')
