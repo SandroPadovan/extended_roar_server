@@ -22,42 +22,30 @@ In order to install, run the following command in the root directory of this rep
 
 
 ## Configuration
-To simply launch the server, adjust constants in the files listed below.
-The settings file is the main configuration file containing only global constants.
-The constants of all other files are typically located at the top of the file, unless indicated otherwise.
-If nothing is indicated and there are constants further down in the file, it may be advisable not to change them.
-Handle with care and at your own risk of breaking stuff! 
 
-| File                                                 | Constant                                                                                                       |
-|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| `environment/anomaly_detection/anomaly-detection.py` | - Contamination factor                                                                                         |
-| `environment/settings.py`                            | - CSV folder path<br>- Verify CSV headers<br>- Client IP address<br>- AD features<br>- C&C simulation settings |
-| `vX/agent/agent.py`                                  | - Agent specific constants and starting values ()                                                              |
-| `vX/agent/model.py`                                  | - Model specific constants and starting values                                                                 |
-| `vX/environment/controller.py`                       | - Episode specific constants and values (orchestration)                                                        |
+In the `/config` folder, create a config file `config.ini`. Copy the contents of the `example_config.ini` into
+your new config file. You can use this to set various configuration values, without having to modify any of the source
+code files.
 
-To be able to used auxiliary scripts, there are other constants contained in the files listed below that may require adjustments - depending on the script to be run.
+#### Necessary Config Values
 
-| File                                                | Constant                                                                                                       |
-|-----------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| `environment/reward/ideal_AD_performance_reward.py` | - Detected configurations (only check if original set was altered)                                             |
-| `environment/abstract_controller.py`                | - Wait for user confirmation (default False)                                                                   |
-| `environment/state_handling.py`                     | - Folder names (DANGER ZONE!)                                                                                  |
-| `environment/settings.py`                           | - CSV folder path<br>- Verify CSV headers<br>- Client IP address<br>- AD features<br>- C&C simulation settings |
-| `utilities/simulate.py`                             | - Configuration settings for unlimited encryption rate                                                         |
-| `accuracy.py`                                       | - Follow instructions at the top                                                                               |
-| `accuracy_pretrained.py`                            | - Follow instructions at the top                                                                               |
-| `find-avg-rate.py`                                  | - Metrics folder path (default training set folder)                                                            |
-| `fp-to-csv.py`                                      | - CSV file names<br>- Verify CSV headers                                                                       |
-| `plot-activation-func.py`                           | - Activation functions<br>- Plot axis range and descriptions                                                   |
-| `plot-perf-reward-func.py`                          | - Reward functions<br>- Plot axis range and descriptions                                                       |
-| `select-fingerprints-test-set.py`                   | - Fingerprint folders (source and target)                                                                      |
+As you can see, many of the values from the `example_config.ini` file are already set to some value. However, you need
+to set some important options to start.
 
-Other files should technically not require any changes to configurations as they import the requirements from the settings file.
-But then again, some files or configurations may have been overlooked.
-So best to try first if it works out of the box or after the adjustments listed above.
-If not, then have a go at debugging and changing values but watch out for side effects due to global usage of some constants.
 
+| Section       | Key                          | Description                                                                                                      |
+|---------------|------------------------------|------------------------------------------------------------------------------------------------------------------|
+| `environment` | `clientIP`                   | - IP address of client device, e.g. 192.168.1.100                                                                |
+| `filepaths`   | `training_csv_folder_path`   | - **Absolute** path to the training data folder                                                                  |
+| `filepaths`   | `evaluation_csv_folder_path` | - **Absolute** path to the evaluation data folder                                                                |
+| `filepaths`   | `fingerprints_folder`        | - path to complete set of collected raw_data, used in script to split raw data into training and evaluation sets |
+| `filepaths`   | `csv_folder_path`            | - **Absolute** path to fingerprints folder, used in script to split raw data into training and evaluation sets   |
+
+Using the other config options available in the `example_config.ini` file, you can adjust the operation of the
+prototypes and auxilary scripts.
+
+For example, by adjusting the `syscall_training_path`, `syscall_test_path`, and `normal_vectorizer_path`,
+the data with which the AD is trained can be adjusted, i.e. additional behaviors can be used.
 
 
 
@@ -67,15 +55,43 @@ If not, then have a go at debugging and changing values but watch out for side e
 All scripts contained in this repository can only work if the required data can be found, i.e., the collected fingerprints need to be stored in a very specific way.
 
 ```
-FOLDER                  DESCRIPTION
+FOLDER                                  DESCRIPTION
 
-fingerprints            # The local folder containing all respective subdirectories. This folder and its children are not required to be located in this repository as long as the corresponding settings are correctly set.
--- evaluation           # The subfolder where the portion of fingerprints explicitly used only in accuracy computation is stored. The corresponding setting is called `EVALUATION_CSV_FOLDER_PATH`.
-    -- infected-cX      # Directory for all infected-behavior fingerprints belonging to ransomware configuration X. There should be one folder for every configuration.
-    -- normal           # Directory for normal-behavior fingerprints. There should be exactly one such folder here.
--- training             # The subfolder where all other fingerprints used during training will be stored. The corresponding setting is called `TRAINING_CSV_FOLDER_PATH`.
-    -- infected-cX      # Directory for all infected-behavior fingerprints belonging to ransomware configuration X. There should be one folder for every configuration.
-    -- normal           # Directory for normal-behavior fingerprints. There should be exactly one such folder here.
+fingerprints                            # The local folder containing all respective subdirectories. This folder and its children are not required to be located in this repository as long as the corresponding settings are correctly set.
+-- evaluation                           # The subfolder where the portion of fingerprints explicitly used only in accuracy computation is stored. The corresponding config option is called `evaluation_csv_folder_path`.
+    -- infected-cX                      # Directory for all infected-behavior fingerprints belonging to ransomware configuration X. There should be one folder for every configuration.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
+    -- normal                           # Directory for normal-behavior fingerprints. There should be exactly one such folder here.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
+    -- compression-cX                   # Directory for infected compression-behavior fingerprints. There should be one folder for every configuration.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
+    -- compression                      # Directory for compression-behavior fingerprints. There should be exactly one such folder here.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
+    -- installation-cX                  # Directory for infected installation-behavior fingerprints. There should be one folder for every configuration.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
+    -- installation                     # Directory for installation-behavior fingerprints. There should be exactly one such folder here.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
+    -- compression+installation+normal  # Directory including the concatenation of compression, installation and normal data.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
+    -- compression+normal               # Directory including the concatenation of compression and normal data.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
+-- training                             # The subfolder where all other fingerprints used during training will be stored. The corresponding config option is called `training_csv_folder_path`.
+    -- infected-cX                      # Directory for all infected-behavior fingerprints belonging to ransomware configuration X. There should be one folder for every configuration.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
+    -- normal                           # Directory for normal-behavior fingerprints. There should be exactly one such folder here.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
+    -- compression-cX                   # Directory for infected compression-behavior fingerprints. There should be one folder for every configuration.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
+    -- compression                      # Directory for compression-behavior fingerprints. There should be exactly one such folder here.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
+    -- installation-cX                  # Directory for infected installation-behavior fingerprints. There should be one folder for every configuration.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
+    -- installation                     # Directory for installation-behavior fingerprints. There should be exactly one such folder here.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
+    -- compression+installation+normal  # Directory including the concatenation of compression, installation and normal data.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
+    -- compression+normal               # Directory including the concatenation of compression and normal data.
+        -- syscalls                     # Direcotry including the actual syscall fingerprint files.
 ```
 
 
@@ -84,4 +100,4 @@ fingerprints            # The local folder containing all respective subdirector
 
 ## Setup Complete
 All done!
-Now you should be able to run the scripts as presented in the [main README](./README.md#Run the Server).
+Now you should be able to run the scripts as presented in the [main README](./README.md).

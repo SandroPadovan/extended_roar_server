@@ -1,25 +1,23 @@
-# ROAR - Server
+# Extended ROAR - Server
+
 Master thesis on Ransomware Optimized with AI for Resource-constrained devices.\
-_The official title of this thesis is "AI-powered Ransomware to Optimize its Impact on IoT Spectrum Sensors"._
+_The official title of this thesis is "AI-powered Ransomware to Stay Hidden"._
 
-It is generally advised to first consult the corresponding report of this master thesis.
-The report motivates the thesis and introduces the required background.
-It further explains the development, reasoning, and results of each prototype in great detail.
+This repository contains the RL Agent and command and control (C&C) part of the project.
+There is [another repository](https://github.com/SandroPadovan/extended_roar_client) for the client device
+software (ransomware, fingerprint collection, additional behaviors, etc.)
 
-This repository contains the RL Agent and command and control (C&C) part of ROAR.
-There is [another repository](https://github.com/jluech/roar_client) for the underlying ransomware.
+The master thesis extended a previous work, and the initial codebase of this project was adopted and extended
+from the original project by [jluech](https://github.com/jluech) under the MIT license.
+The original repository can be found [here](https://github.com/jluech/RansomAI/tree/master).
 
+Note: This README only covers the extensions made, for the other parts refer to the previous work.
 
-
-
-
-## Setup ROAR Framework
+## Setup
 
 For detailed information regarding quick setup or advanced usage, please refer to the [INSTALL](./INSTALL.md) instructions.
-When the setup is complete, continue with this file to receive an overview of the repository content and instructions on how to launch the server or auxiliary scripts.
-
-
-
+When the setup is complete, continue with this file to receive an overview of the repository content and instructions 
+on how to launch the server or auxiliary scripts.
 
 
 ## Structure
@@ -32,7 +30,7 @@ contains the `AbstractAgent` class and all files related to selecting and constr
 - `api/`\
 contains the Flask app to start the command and control (C&C) server API. The various endpoints are split semantically into corresponding files, e.g., everything to do with receiving fingerprints and encryption rates is stored in the `fingerprint.py` file.
 - `environment/`\
-contains the main parts of the RL environment, such as the `AbstractController` (orchestration of an `Agent` and its training process), `AbstractPreprocessor` (preprocessing fingerprints for anomaly detection (AD) or passing through a neural network in the `Agent`), or `AbstractReward` (computing rewards for states/actions based on the results of AD).
+contains the main parts of the RL environment, such as the `AbstractController` (orchestration of an `Agent` and its training process), or `AbstractReward` (computing rewards for states/actions based on the results of AD).
 Moreover, the main settings file and methods to handle the storage of a single run to allow parallel executions are also contained in this folder.
 - `rw-configs/`\
 contains all available ransomware configurations an RL agent can choose from. Taken actions are converted to configurations that are then sent to the ROAR client for integration into the encryption process.
@@ -44,32 +42,20 @@ These folders include the `fingerprints` folder, used for saving received finger
 
 The prototype-specific components are stored in a folder of their respective prototype version, i.e., `vX/` for prototype version `X`.
 In there you can find all files that overwrite certain behavior or are otherwise specific to this prototype.
-The components are arranged the same way the global components are arranged, for example, the prototype-specific implementation of the `ControllerOptimized` for prototype version 8 is stored in the `v8/environment` package.
-
-
-
+The components are arranged the same way the global components are arranged, for example, the prototype-specific implementation of the controller for prototype version 13 is stored in the `v13/environment` package.
 
 
 ## Prototypes
 
-This table contains high-level summaries of the prototype versions for an RL agent contained in this repository.
+This table contains high-level summaries of the prototype versions for an RL agent extended in this repository.
+For the documentation of the other prototypes included in this repository, refer to the previous work.
 For more details, please refer to the report of this master thesis.
 
-| Prototype | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1         | Proof of Concept: agent manually selects each action exactly once, then terminates after the last action. Every incoming fingerprint is evaluated by anomaly detection, but the computed reward is not further processed in any way.                                                                                                                                                                                                                                   |
-| 2         | Incorporate Intelligence: replace manual selection of actions with a neural network that predicts the optimal action to take in the current state. In this version, the agent performs a single episode and stops it once the ransomware is done encrypting. This version uses ReLU activation and, thus, suffers from the "dying ReLU" problem.                                                                                                                       |
-| 3         | Considering Performance: the reward system now also considers the performance of the chosen action by incorporating the encryption rate. The learning process is continued over multiple episodes to a maximum number of steps per episode (simulation) or until the target device is fully encrypted (real scenario). This version adopts the "dying ReLU" problem.                                                                                                   |
-| 4         | Improving Simulations: simulating the encryption on the client device heavily speeds up the learning process. Additionally, modeling the simulation as close to the real environment as possible is key to transferring the learnings. Therefore, the simulation was adjusted to consider an artificial corpus of data to be encrypted. This prototype also fixes the "dying ReLU" problem of the previous versions by replacing ReLU activation with SiLU activation. |
-| 5         | Mimic Ideal AD: replace AD in reward computation with manual detection selection to mimic near-perfect AD. Manually hiding configurations that are deemed "good" removes the fluctuation from the previous AD results and provides stable rewards for stable action selection.                                                                                                                                                                                         |
-| 6         | Comparing Algorithms: implement the SARSA algorithm to compare the results with previous Q-learning versions. This version is based on prototype 4 but replaces Q-learning with SARSA.                                                                                                                                                                                                                                                                                 |
-| 7         | Ideal AD in SARSA: adopt the ideal AD introduced in prototype 5. This version is based on prototype 6 but applies the same changes as version 5 did compared to version 4.                                                                                                                                                                                                                                                                                             |
-| 8         | Optimizing Performance: combine findings of experiments with all previous prototypes to optimize speed and accuracy. Prototype can be evaluated in simulation (offline) and based on fingerprints received directly from a target device (online). The prior prototypes would theoretically also be able to support online training, but possibly occurring bugs (most certainly) have not been addressed for them.                                                    |
-| 9         | Auto-encode Fingerprints: investigate the effectiveness of an autoencoder being used in AD. This prototype replaces the Isolation Forest model in AD with an autoencoder to learn the key features of a fingerprint for identifying anomalies in behavior.                                                                                                                                                                                                             |
-| 98        | Single-Step Episode: take prototype version 4 or 5 and remove the aspect of multi-step episodes. Instead, the agent trains for multiple episodes of exactly one step each. This version was implemented to examine the effects on the training and the existence of an underlying relationship between individual steps within an episode. However, this version did not directly contribute to the prototype development.                                             |
-| 99        | Brute-Force Predictions: manually select the action to be predicted by iterating over all possible actions and selecting each as often as is defined by a configurable limit. This was implemented to explore whether the agent is able to learn solely from the received rewards instead of relying on a neural network. This prototype was ultimately discarded and did not contribute to the development at all.                                                    |
-
-
+| Prototype | Description                                                                                                                                                                                                                                                                                                                      |
+|-----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 11        | Proof of Concept: agent manually selects each action exactly once, then terminates after the last action. Every incoming fingerprint is evaluated by anomaly detection, but the computed reward is not further processed in any way.                                                                                             |
+| 12        | Simple prototype: replace manual selection of actions with a neural network that predicts the optimal action to take in the current state. In this version, the agent performs a single episode and stops it once the ransomware is done encrypting.                                                                             |
+| 13        | Improved prototype: the reward system now also considers the performance of the chosen action by incorporating the encryption rate. The learning process is continued over multiple episodes until full encryption. Using the config file, ideal AD can be used, as well as additional benign behaviors or other AD classifiers. |
 
 
 
@@ -81,7 +67,7 @@ There are different ways to use the `server.py` according to the intended purpos
 
 ### Collect Fingerprints
 Fitting if the intention is to only listen to the API for collection of incoming fingerprints.
-Collected fingerprints are stored in the [fingerprints folder](./fingerprints) and need to be manually moved to their destination folder, see [Folder Structure](#folder-structure).
+Collected fingerprints are stored in the [fingerprints folder](./fingerprints) and need to be manually moved to their destination folder.
 
 Start the server as follows: `python3 server.py -c`
 
@@ -141,38 +127,16 @@ This time, however, the expected results are much better than before and clearly
 To avoid unwanted influences, the evaluation of agent performance is done using a dedicated evaluation set of fingerprints instead of the regular training set of fingerprints.
 In addition, during both evaluation phases, the agent is only predicting actions but not learning from its choices, such that the evaluation set can still be considered "never seen before".
 
-Run the script as follows: `python3 accuracy.py`
+Adjust config option in the `config.ini` file in the `accuracy` section.
 
-If you want to evaluate and improve a pretrained instance of an agent, you can divert to the second accuracy script.
-Make sure to adjust the path to the `AgentRepresentation` file you want to evaluate in the setup section of the script.
-
-Run the script the same as the other: `python3 accuracy_pretrained.py`
-- **WARNING**: _The second script has not been properly evaluated yet! Although it should work in theory, it was never actually tested so far._
-
-### Convert Fingerprints to CSV Files
-Run this script to convert the collected fingerprints from the target device to a CSV file for further usage, e.g., in simulated execution or in combination with the [data pipelines](./__data/fingerprint_processing_pipelines.zip).
-The respective target set of fingerprints (training or evaluation) must be configured at the top of the script.
-
-Run the script as follows: `python3 fp-to-csv.py`
+Run the script as follows: `python3 syscall_accuracy.py`
 
 ### Evaluate Anomaly Detection (AD)
 To evaluate the quality of the collected fingerprints, or their underlying ransomware configuration, respectively, we can pass the collected fingerprints through AD.
-This will first evaluate anomaly detection over all previously collected fingerprints (CSV datasets) once with SimplePreprocessor and once with the CorrelationPreprocessor (highly correlated features are removed).
-Finally, the script will evaluate all collected fingerprints that still reside in the collection folder.
-This is especially helpful during collection as to detect unexpected behavior or results as early as possible.
+For this, use the script included in the `syscall_anomaly_detection.py` file. Configure the AD using the 
+`anomaly_detection` section in the config file and adjust the script to fit your needs.
 
-Run the script as follows: `python3 evaluate_AD.py`
-
-### Find Average Encryption Rate of Configurations
-
-The environment simulation relies on the encryption rate of every ransomware configuration to compute the performance reward.
-However, no fixed value is available for configurations with unlimited encryption rate.
-Accordingly, manually determining and configuring the average encryption rate for ransomware configurations with unlimited rates is required.
-This is what this script is for:
-it iterates over all collected encryption metrics for each configuration, extracts the reported encryption rate, and computes the average.
-The reported average rate can then be manually configured in the [simulation file](./utilities/simulate.py).
-
-Run the script as follows: `python3 find_avg_rate.py`
+Run the script as follows: `python3 syscall_anomaly_detection.py`
 
 ### Plot Activation Function
 
